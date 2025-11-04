@@ -15,6 +15,7 @@ spec:
       containers:
       - name: backend
         image: backend-app
+        imagePullPolicy: Never
         ports:
         - containerPort: 8080
         envFrom:
