@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/ajinkya517-web/Project_01.git'
+                git branch: 'main', url: 'https://github.com/ajinkya517-web/Project_01.git'
             }
         }
 
