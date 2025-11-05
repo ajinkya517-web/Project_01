@@ -14,13 +14,13 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: frontend-app
-        imagePullPolicy: Never
+        image: abhi2305/frontend-app:latest
+        imagePullPolicy: Always
         ports:
-        - containerPort: 80
+        - containerPort: 3000
         env:
         - name: REACT_APP_API_URL
-          value: "http://backend-service:8080"
+          value: "http://54.204.175.86:30002"   # Public IP + Backend NodePort
 ---
 apiVersion: v1
 kind: Service
@@ -31,7 +31,7 @@ spec:
   selector:
     app: frontend
   ports:
-  - port: 80
-    targetPort: 80
-    nodePort: 30001
+    - port: 80
+      targetPort: 80
+      nodePort: 30001
 

@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: backend-deployment
 spec:
   replicas: 1
   selector:
@@ -14,13 +14,23 @@ spec:
     spec:
       containers:
       - name: backend
-        image: backend-app
-        imagePullPolicy: Never
+        image: abhi2305/backend-app:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
-        envFrom:
-        - secretRef:
-            name: backend-env
+        env:
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_USER
+          value: "admin"
+        - name: DB_PASSWORD
+          value: "admin123"
+        - name: DB_NAME
+          value: "testdb"
+        - name: DB_PORT
+          value: "5432"
+        - name: ALLOWED_ORIGINS
+          value: "http://54.204.175.86:30001"
 ---
 apiVersion: v1
 kind: Service
@@ -31,8 +41,7 @@ spec:
   selector:
     app: backend
   ports:
-  - protocol: TCP
-    port: 8080
-    targetPort: 8080
-    nodePort: 30002
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30002
 
