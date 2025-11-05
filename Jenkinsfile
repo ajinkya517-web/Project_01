@@ -2,77 +2,57 @@ pipeline {
     agent any
 
     environment {
-        FRONTEND_IMAGE = "frontend-app"
-        BACKEND_IMAGE  = "backend-app"
-        ENV_FILE       = "./backend/.env"
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')   
+        FRONTEND_IMAGE = "abhi2305/frontend-app:latest"
+        BACKEND_IMAGE = "abhi2305/backend-app:latest"
+        REACT_APP_SERVER_URL = "http://backend-service:8080/employees"
     }
 
     stages {
-        stage('Clone Repository') {
+
+        stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/ajinkya517-web/Project_01.git'
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Build Backend Docker Image') {
             steps {
-                sh '''
-                echo "Building Docker images..."
-                docker build -t $FRONTEND_IMAGE ./frontend
-                docker build -t $BACKEND_IMAGE ./backend
-                '''
+                sh """
+                cd backend
+                docker build -t ${BACKEND_IMAGE} .
+                """
             }
         }
 
-        stage('Load Images into Minikube') {
+        stage('Build Frontend Docker Image') {
             steps {
-                sh '''
-                echo "Loading images into Minikube..."
-                minikube image load $FRONTEND_IMAGE
-                minikube image load $BACKEND_IMAGE
-                '''
+                sh """
+                cd frontend
+                npm install --legacy-peer-deps
+                REACT_APP_SERVER_URL=${REACT_APP_SERVER_URL} npm run build
+                docker build -t ${FRONTEND_IMAGE} .
+                """
             }
         }
 
-        stage('Deploy Backend on Kubernetes') {
+        stage('Push Images to Docker Hub') {
             steps {
-                sh '''
-                echo "Deploying backend..."
-                # Clean up old deployment if it exists
-                kubectl delete deployment backend --ignore-not-found
-                kubectl delete service backend-service --ignore-not-found
-
-                # Apply YAML for backend
-                kubectl apply -f k8s/backend.yaml
-
-                # Create Kubernetes Secret from backend .env file
-                kubectl delete secret backend-env --ignore-not-found
-                kubectl create secret generic backend-env --from-env-file=$ENV_FILE
-
-                # Attach the secret to the running backend deployment
-                kubectl set env deployment/backend --from=secret/backend-env
-                '''
+                sh """
+                echo "${DOCKERHUB_CREDENTIALS_PSW}" | docker login -u "${DOCKERHUB_CREDENTIALS_USR}" --password-stdin
+                docker push ${BACKEND_IMAGE}
+                docker push ${FRONTEND_IMAGE}
+                """
             }
         }
 
-        stage('Deploy Frontend on Kubernetes') {
+        stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                echo "Deploying frontend..."
-                kubectl delete deployment frontend --ignore-not-found
-                kubectl delete service frontend-service --ignore-not-found
-                kubectl apply -f k8s/frontend.yaml
-                '''
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                sh '''
-                echo "Verifying pods and services..."
-                kubectl get pods -o wide
-                kubectl get svc
-                '''
+                sh """
+                kubectl apply -f k8s/
+                kubectl rollout restart deployment/frontend
+                kubectl rollout restart deployment/backend-deployment
+                """
             }
         }
     }
