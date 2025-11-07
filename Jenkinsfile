@@ -5,7 +5,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub')   
         FRONTEND_IMAGE = "abhi2305/frontend-app:latest"
         BACKEND_IMAGE = "abhi2305/backend-app:latest"
-        REACT_APP_SERVER_URL = "http://54.204.175.86:30002"
+        REACT_APP_SERVER_URL = "http://backend-service:8080/employees"
     }
 
     stages {
